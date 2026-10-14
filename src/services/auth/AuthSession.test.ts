@@ -35,3 +35,11 @@ describe('AuthSession', () => {
     expect(listener).not.toHaveBeenCalled();
   });
 });
+
+// TODO (Savvas): tests for staying signed in. Pass a fake store
+// (see LocalStorageUserRepository's tests for the idea).
+describe('AuthSession remembers the user', () => {
+  it.todo('restores the saved user when a new AuthSession is created (page refresh)');
+  it.todo('saves the user on sign in');
+  it.todo('forgets the user on sign out');
+});

@@ -9,6 +9,19 @@ import { LocalAuthProvider } from './services/auth/LocalAuthProvider';
 import { LoginValidator } from './services/auth/LoginValidator';
 import { Sha256PasswordHasher } from './services/auth/PasswordHasher';
 
+// TODO (Savvas) — this week App.js becomes the wiring and the routes:
+//  1. Always use LocalAuthProvider (so accounts made by sign-up can log in).
+//     On startup, save the two DEMO_ACCOUNTS into the user repository with
+//     hashed passwords if they aren't there yet, so the demo logins still work.
+//  2. Create one SignUpService(users, hasher, session) next to `session`.
+//  3. Replace the if/else in the return with <Routes>:
+//       /login      -> <Login .../>        (signed in? go to ROLE_HOME[role])
+//       /signup     -> <SignUpPage .../>   (signed in? go to ROLE_HOME[role])
+//       /dashboard  -> <ProtectedRoute user={user} role="member"> member home
+//       /admin      -> <ProtectedRoute user={user} role="staff">  staff home
+//       *           -> <Navigate to="/login" replace />
+//     The two home pages can be a heading plus the Sign out button for now.
+//
 // Created once at startup. The provider is the injected Strategy.
 const provider =
   process.env.REACT_APP_AUTH_PROVIDER === 'local'

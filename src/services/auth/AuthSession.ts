@@ -9,6 +9,16 @@ export type AuthListener = (user: SessionUser | null) => void;
  *
  * OBSERVER: this class is the subject. subscribe() registers listeners,
  * and signIn()/signOut() notify them when the current user changes.
+ *
+ * TODO (Savvas) — stay signed in after a refresh:
+ *  1. Add a second constructor parameter, the same way
+ *     LocalStorageUserRepository takes one:
+ *       private readonly store: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> = window.localStorage
+ *  2. In the constructor, read 'gym.session'; if present, JSON.parse it
+ *     into this.user (wrap in try/catch in case it's corrupted).
+ *  3. signIn success: store.setItem('gym.session', JSON.stringify(user)).
+ *  4. signOut: store.removeItem('gym.session').
+ * Existing tests keep working because the parameter has a default.
  */
 export class AuthSession {
   private user: SessionUser | null = null;
