@@ -1,6 +1,4 @@
 /**
- * OWNER: Sawyer
- *
  * WHAT: One reusable class that saves any kind of record as a JSON array
  *       under one localStorage key. Use it directly for any table:
  *         const exercises = new LocalStorageRepository<Exercise>('gym.exercises');
@@ -18,26 +16,34 @@ export class LocalStorageRepository<T extends { id: string }> {
     private readonly store: Pick<Storage, 'getItem' | 'setItem'> = window.localStorage
   ) {}
 
-  /** TODO: read this.key and JSON.parse it. Return [] if nothing is stored. */
+  /** Every record, or [] if nothing is stored yet or the data is unreadable. */
   findAll(): T[] {
-    throw new Error('TODO: findAll');
+    const raw = this.store.getItem(this.key);
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? (parsed as T[]) : [];
+    } catch {
+      return [];
+    }
   }
 
-  /** TODO: findAll(), then find the record with this id (or undefined). */
   findById(id: string): T | undefined {
-    throw new Error('TODO: findById');
+    return this.findAll().find((r) => r.id === id);
   }
 
-  /**
-   * TODO: findAll(), drop any record with the same id, add this one,
-   * then setItem(this.key, JSON.stringify(list)).
-   */
+  /** Inserts, or replaces the record that has the same id. */
   save(record: T): void {
-    throw new Error('TODO: save');
+    const others = this.findAll().filter((r) => r.id !== record.id);
+    this.write([...others, record]);
   }
 
-  /** TODO: findAll(), filter out this id, write the list back. */
+  /** No error if the id doesn't exist. */
   delete(id: string): void {
-    throw new Error('TODO: delete');
+    this.write(this.findAll().filter((r) => r.id !== id));
+  }
+
+  private write(records: T[]): void {
+    this.store.setItem(this.key, JSON.stringify(records));
   }
 }

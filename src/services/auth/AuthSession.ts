@@ -3,6 +3,11 @@ import type { AuthProvider } from './AuthProvider';
 
 export type AuthListener = (user: SessionUser | null) => void;
 
+/** Anything shaped like localStorage. Tests pass a small fake. */
+export type SessionStore = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+
+const SESSION_KEY = 'gym.session';
+
 /**
  * STRATEGY: the constructor takes an AuthProvider, so how sign-in works is
  * injected and can be swapped without changing this class.
@@ -10,21 +15,21 @@ export type AuthListener = (user: SessionUser | null) => void;
  * OBSERVER: this class is the subject. subscribe() registers listeners,
  * and signIn()/signOut() notify them when the current user changes.
  *
- * TODO (Savvas) — stay signed in after a refresh:
- *  1. Add a second constructor parameter, the same way
- *     LocalStorageUserRepository takes one:
- *       private readonly store: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> = window.localStorage
- *  2. In the constructor, read 'gym.session'; if present, JSON.parse it
- *     into this.user (wrap in try/catch in case it's corrupted).
- *  3. signIn success: store.setItem('gym.session', JSON.stringify(user)).
- *  4. signOut: store.removeItem('gym.session').
- * Existing tests keep working because the parameter has a default.
+ * Staying signed in: when a store is passed in (App passes localStorage),
+ * the signed-in user is saved under 'gym.session' and read back when the
+ * app starts, so a page refresh keeps you signed in. Without a store the
+ * session lives in memory only, which keeps tests independent.
  */
 export class AuthSession {
   private user: SessionUser | null = null;
   private readonly listeners = new Set<AuthListener>();
 
-  constructor(private readonly provider: AuthProvider) {}
+  constructor(
+    private readonly provider: AuthProvider,
+    private readonly store?: SessionStore
+  ) {
+    this.user = this.restore();
+  }
 
   get currentUser(): SessionUser | null {
     return this.user;
@@ -43,6 +48,7 @@ export class AuthSession {
     const user = await this.provider.signIn(email, password);
     if (user) {
       this.user = user;
+      this.store?.setItem(SESSION_KEY, JSON.stringify(user));
       this.notify();
     }
     return user;
@@ -50,7 +56,19 @@ export class AuthSession {
 
   signOut(): void {
     this.user = null;
+    this.store?.removeItem(SESSION_KEY);
     this.notify();
+  }
+
+  /** Reads the saved user; a missing or corrupted value means signed out. */
+  private restore(): SessionUser | null {
+    const saved = this.store?.getItem(SESSION_KEY);
+    if (!saved) return null;
+    try {
+      return JSON.parse(saved) as SessionUser;
+    } catch {
+      return null;
+    }
   }
 
   private notify(): void {
