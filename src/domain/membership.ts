@@ -3,18 +3,34 @@ import type { Membership, MembershipPlan } from './types';
 /** What the app shows for a membership. Computed, never stored (ADR-003). */
 export type MembershipStatus = 'active' | 'grace' | 'expired' | 'frozen' | 'cancelled';
 
-/** Decides a membership's status on a given day ('YYYY-MM-DD'). */
-export function membershipStatus(membership: Membership, plan: MembershipPlan, today: string): MembershipStatus {
-  if (membership.state === 'frozen') return 'frozen';
-  if (membership.state === 'cancelled') return 'cancelled';
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(today) || isNaN(Date.parse(today))) {
-    throw new Error('Invalid date: ' + today);
+/**
+ * Turns 'YYYY-MM-DD' into a whole day number so dates compare as days,
+ * with no time-of-day or time-zone surprises. Throws on anything else.
+ */
+function toDayNumber(isoDate: string): number {
+  const ms = Date.parse(isoDate);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate) || isNaN(ms)) {
+    throw new Error('Invalid date: ' + isoDate);
   }
-  const todayDay = Date.parse(today) / 86400000;
-  const endDay = Date.parse(membership.endDate) / 86400000;
+  return ms / MS_PER_DAY;
+}
 
-  if (todayDay <= endDay) return 'active';
-  if (todayDay <= endDay + plan.graceDays) return 'grace';
+/**
+ * Decides a membership's status on a given day ('YYYY-MM-DD').
+ * Frozen and cancelled are choices someone made, so they win over dates.
+ * Otherwise: active through the end date, then grace for the plan's grace
+ * days, then expired.
+ */
+export function membershipStatus(membership: Membership, plan: MembershipPlan, today: string): MembershipStatus {
+  if (membership.state !== 'active') return membership.state;
+
+  const day = toDayNumber(today);
+  const lastActiveDay = toDayNumber(membership.endDate);
+  const lastGraceDay = lastActiveDay + plan.graceDays;
+
+  if (day <= lastActiveDay) return 'active';
+  if (day <= lastGraceDay) return 'grace';
   return 'expired';
 }
