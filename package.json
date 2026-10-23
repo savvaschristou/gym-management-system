@@ -22,7 +22,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "test:coverage": "react-scripts test --watchAll=false --coverage"
   },
   "eslintConfig": {
     "extends": [
@@ -40,6 +41,18 @@
       "last 1 chrome version",
       "last 1 firefox version",
       "last 1 safari version"
+    ]
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.{js,ts,tsx}",
+      "!src/index.js",
+      "!src/testUtils.ts",
+      "!src/examples/**",
+      "!src/domain/types.ts",
+      "!src/domain/auth/User.ts",
+      "!src/data/UserRepository.ts",
+      "!src/services/auth/AuthProvider.ts"
     ]
   }
 }
