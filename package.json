@@ -23,13 +23,15 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "test:coverage": "react-scripts test --watchAll=false --coverage"
+    "test:coverage": "react-scripts test --watchAll=false --coverage",
+    "lint": "eslint --max-warnings=0 \"src/**/*.{js,ts,tsx}\""
   },
   "eslintConfig": {
     "extends": [
       "react-app",
       "react-app/jest"
-    ]
+    ],
+    "settings": { "testing-library/custom-queries": "off" }
   },
   "browserslist": {
     "production": [
