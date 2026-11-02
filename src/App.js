@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import './App.css';
 import Login from './Login';
+import { LocalStorageRepository } from './data/LocalStorageRepository';
 import { LocalStorageUserRepository } from './data/LocalStorageUserRepository';
 import { ROLE_HOME } from './domain/auth/roleHome';
 import { AuthSession } from './services/auth/AuthSession';
@@ -10,6 +11,7 @@ import { LocalAuthProvider } from './services/auth/LocalAuthProvider';
 import { LoginValidator } from './services/auth/LoginValidator';
 import { Sha256PasswordHasher } from './services/auth/PasswordHasher';
 import { SignUpService } from './services/auth/SignUpService';
+import MembershipCard from './ui/MembershipCard';
 import ProtectedRoute from './ui/ProtectedRoute';
 import SignUpPage from './ui/SignUpPage';
 
@@ -20,6 +22,15 @@ const hasher = new Sha256PasswordHasher();
 const session = new AuthSession(new LocalAuthProvider(users, hasher), window.localStorage);
 const validator = new LoginValidator();
 const signUpService = new SignUpService(users, hasher, session);
+const plans = new LocalStorageRepository('gym.membershipPlans');
+const memberships = new LocalStorageRepository('gym.memberships');
+
+/** A date as 'YYYY-MM-DD' in the user's own time zone, `daysFromNow` days ahead. */
+function localDate(daysFromNow = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + daysFromNow);
+  return d.toLocaleDateString('en-CA'); // en-CA formats as YYYY-MM-DD
+}
 
 // Save the demo accounts as real users the first time the app runs, so the
 // demo logins work through LocalAuthProvider like any other account.
@@ -34,14 +45,40 @@ DEMO_ACCOUNTS.forEach(async (account) => {
   });
 });
 
-function Home({ title, user }) {
+// Save the membership plans (same values as db/schema.sql) and give the demo
+// member a monthly membership, the first time the app runs.
+if (plans.findAll().length === 0) {
+  plans.save({ id: 'monthly', name: 'Monthly', durationDays: 30, graceDays: 5, isActive: true });
+  plans.save({ id: 'semester', name: 'Semester', durationDays: 120, graceDays: 7, isActive: true });
+  plans.save({ id: 'annual', name: 'Annual', durationDays: 365, graceDays: 14, isActive: true });
+}
+if (!memberships.findAll().some((m) => m.userId === 'demo-member')) {
+  memberships.save({
+    id: 'demo-membership',
+    userId: 'demo-member',
+    planId: 'monthly',
+    state: 'active',
+    startDate: localDate(),
+    endDate: localDate(30),
+  });
+}
+
+function Home({ title, user, children }) {
   return (
     <div>
       <h1>{title}</h1>
       <p>Signed in as {user.displayName} ({user.role})</p>
+      {children}
       <button onClick={() => session.signOut()}>Sign out</button>
     </div>
   );
+}
+
+/** The signed-in member's membership card (their first membership, if any). */
+function MemberMembership({ user }) {
+  const membership = memberships.findAll().find((m) => m.userId === user.id) ?? null;
+  const plan = membership ? plans.findById(membership.planId) ?? null : null;
+  return <MembershipCard membership={membership} plan={plan} today={localDate()} />;
 }
 
 function App() {
@@ -71,7 +108,9 @@ function App() {
           path="/dashboard"
           element={
             <ProtectedRoute user={user} role="member">
-              <Home title="Member home" user={user} />
+              <Home title="Member home" user={user}>
+                <MemberMembership user={user} />
+              </Home>
             </ProtectedRoute>
           }
         />
