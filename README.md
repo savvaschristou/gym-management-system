@@ -34,6 +34,19 @@ npm run test:coverage          # tests plus a coverage report in coverage/
 npm run lint                   # ESLint
 ```
 
+## Database
+
+The `server/` folder holds the database layer: Sequelize models, migrations and seed data, using SQLite (a single file, `server/gym.sqlite`, so there's nothing to install). The React app doesn't use it yet; it still stores data in the browser.
+
+```bash
+cd server
+npm install
+npm run db:reset   # build every table from scratch, then fill it with test data
+npm run db:check   # row counts, relationships and constraint checks
+```
+
+The reference PostgreSQL schema is in [db/schema.sql](db/schema.sql).
+
 ## How we work
 
 - [Git workflow](docs/git-workflow.md): branches, commit messages, pull requests and merging
