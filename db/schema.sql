@@ -1,20 +1,18 @@
--- OWNER: Sawyer
--- Gym Management System: reference schema and demo data (PostgreSQL)
+-- Gym Management System: database schema (PostgreSQL DDL)
 --
--- The prototype stores these same tables as JSON in localStorage (ADR-002).
--- This file is the target schema if the team moves to a real database in
--- the week of Nov 30, and the DDL deliverable for the architecture milestone.
--- All tables are in 3NF; derived values (membership status, PRs, 1RM) are
--- computed, not stored (ADR-003).
+-- Seven tables in third normal form. Derived values (membership status,
+-- personal records, one-rep max) are computed, not stored (ADR-003).
+--
+-- The same schema is built from scratch by the Sequelize migrations in
+-- server/migrations (SQLite for development), and filled with test data by
+-- server/seeders. This file is the reference version for PostgreSQL.
 
 CREATE TABLE users (
     user_id        INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     email          VARCHAR(255) NOT NULL UNIQUE,
+    display_name   VARCHAR(100) NOT NULL,
     password_hash  VARCHAR(255) NOT NULL,
-    password_salt  VARCHAR(64)  NOT NULL,
     role           VARCHAR(10)  NOT NULL CHECK (role IN ('member', 'staff')),
-    first_name     VARCHAR(100) NOT NULL,
-    last_name      VARCHAR(100) NOT NULL,
     created_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -29,10 +27,10 @@ CREATE TABLE membership_plans (
 
 CREATE TABLE memberships (
     membership_id  INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    user_id        INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    plan_id        INTEGER NOT NULL REFERENCES membership_plans(plan_id),
-    start_date     DATE    NOT NULL,
-    end_date       DATE    NOT NULL,
+    user_id        INTEGER     NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    plan_id        INTEGER     NOT NULL REFERENCES membership_plans(plan_id),
+    start_date     DATE        NOT NULL,
+    end_date       DATE        NOT NULL,
     state          VARCHAR(10) NOT NULL DEFAULT 'active'
                    CHECK (state IN ('active', 'frozen', 'cancelled')),
     CHECK (end_date >= start_date)
@@ -68,31 +66,12 @@ CREATE TABLE lift_sets (
     UNIQUE (session_id, exercise_id, set_number)
 );
 
--- Indexes for the lookups the app makes most
+-- Indexes for the lookups the app makes most. Primary keys and UNIQUE
+-- columns are indexed automatically; lift_sets(session_id) is covered by
+-- the leading column of its UNIQUE constraint.
 CREATE INDEX idx_memberships_user   ON memberships(user_id);
+CREATE INDEX idx_memberships_plan   ON memberships(plan_id);
 CREATE INDEX idx_checkins_member    ON check_ins(member_id, checked_in_at);
+CREATE INDEX idx_checkins_staff     ON check_ins(staff_id);
 CREATE INDEX idx_sessions_user      ON workout_sessions(user_id, started_at);
 CREATE INDEX idx_liftsets_exercise  ON lift_sets(exercise_id);
-
--- ---------------------------------------------------------------
--- Demo data
--- ---------------------------------------------------------------
--- Demo data. The app creates the same demo accounts in localStorage on startup.
--- Plan lengths and grace days are placeholders; settle real values in the
--- week of Oct 19. Password hashes are placeholders the app regenerates.
-
-INSERT INTO membership_plans (name, duration_days, grace_days, description) VALUES
-    ('Monthly',   30,  5, 'Month-to-month access'),
-    ('Semester', 120,  7, 'One academic semester'),
-    ('Annual',   365, 14, 'Twelve months of access');
-
-INSERT INTO exercises (name, muscle_group) VALUES
-    ('Back Squat', 'Legs'),
-    ('Bench Press', 'Chest'),
-    ('Deadlift', 'Back'),
-    ('Overhead Press', 'Shoulders'),
-    ('Barbell Row', 'Back');
-
-INSERT INTO users (email, password_hash, password_salt, role, first_name, last_name) VALUES
-    ('staff@demo.gym',  'hash', 'salt', 'staff',  'Demo', 'Staff'),
-    ('member@demo.gym', 'hash', 'salt', 'member', 'Demo', 'Member');
