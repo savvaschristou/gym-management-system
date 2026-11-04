@@ -1,0 +1,22 @@
+{
+  "name": "gym-management-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Database layer for the Gym Management System: Sequelize models, migrations and seed data (SQLite).",
+  "scripts": {
+    "db:migrate": "sequelize-cli db:migrate",
+    "db:seed": "sequelize-cli db:seed:all",
+    "db:reset": "sequelize-cli db:migrate:undo:all && sequelize-cli db:migrate && sequelize-cli db:seed:all",
+    "db:check": "node scripts/check.js"
+  },
+  "dependencies": {
+    "sequelize": "^6.37.8",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "sequelize-cli": "^6.6.5"
+  },
+  "allowScripts": {
+    "sqlite3@5.1.7": true
+  }
+}

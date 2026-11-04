@@ -45,3 +45,29 @@ jobs:
         with:
           name: coverage-report
           path: coverage/lcov-report
+
+  database:
+    name: Database migrations and seed
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the database from scratch (migrate, then seed)
+        run: npm run db:reset
+
+      - name: Check row counts, relationships and constraints
+        run: npm run db:check
