@@ -5,15 +5,18 @@ import Login from './Login';
 import { LocalStorageRepository } from './data/LocalStorageRepository';
 import { LocalStorageUserRepository } from './data/LocalStorageUserRepository';
 import { ROLE_HOME } from './domain/auth/roleHome';
+import { currentMembership } from './domain/membership';
 import { AuthSession } from './services/auth/AuthSession';
 import { DEMO_ACCOUNTS } from './services/auth/DemoAuthProvider';
 import { LocalAuthProvider } from './services/auth/LocalAuthProvider';
 import { LoginValidator } from './services/auth/LoginValidator';
 import { Sha256PasswordHasher } from './services/auth/PasswordHasher';
 import { SignUpService } from './services/auth/SignUpService';
+import { StaffService } from './services/staff/StaffService';
 import MembershipCard from './ui/MembershipCard';
 import ProtectedRoute from './ui/ProtectedRoute';
 import SignUpPage from './ui/SignUpPage';
+import StaffTools from './ui/StaffTools';
 
 // Created once at startup. This is the only place that picks the real
 // classes; everything else receives them (dependency injection).
@@ -24,6 +27,8 @@ const validator = new LoginValidator();
 const signUpService = new SignUpService(users, hasher, session);
 const plans = new LocalStorageRepository('gym.membershipPlans');
 const memberships = new LocalStorageRepository('gym.memberships');
+const checkIns = new LocalStorageRepository('gym.checkIns');
+const staffService = new StaffService(users, plans, memberships, checkIns);
 
 /** A date as 'YYYY-MM-DD' in the user's own time zone, `daysFromNow` days ahead. */
 function localDate(daysFromNow = 0) {
@@ -74,9 +79,9 @@ function Home({ title, user, children }) {
   );
 }
 
-/** The signed-in member's membership card (their first membership, if any). */
+/** The signed-in member's membership card (their current membership, if any). */
 function MemberMembership({ user }) {
-  const membership = memberships.findAll().find((m) => m.userId === user.id) ?? null;
+  const membership = currentMembership(memberships.findAll(), user.id);
   const plan = membership ? plans.findById(membership.planId) ?? null : null;
   return <MembershipCard membership={membership} plan={plan} today={localDate()} />;
 }
@@ -118,7 +123,9 @@ function App() {
           path="/admin"
           element={
             <ProtectedRoute user={user} role="staff">
-              <Home title="Staff home" user={user} />
+              <Home title="Staff home" user={user}>
+                <StaffTools service={staffService} staff={user} today={localDate()} />
+              </Home>
             </ProtectedRoute>
           }
         />

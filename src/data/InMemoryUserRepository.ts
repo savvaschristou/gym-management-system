@@ -9,6 +9,10 @@ export class InMemoryUserRepository implements UserRepository {
     return this.users.get(email.toLowerCase());
   }
 
+  findAll(): User[] {
+    return Array.from(this.users.values());
+  }
+
   save(user: User): void {
     this.users.set(user.email.toLowerCase(), user);
   }

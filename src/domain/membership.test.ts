@@ -1,4 +1,4 @@
-import { membershipStatus } from './membership';
+import { addDays, currentMembership, membershipStatus } from './membership';
 import type { Membership, MembershipPlan } from './types';
 
 // A monthly plan with 5 grace days, and a membership that ends Oct 31.
@@ -50,5 +50,29 @@ describe('membershipStatus', () => {
   // Error case
   it('throws a clear error for a date that is not YYYY-MM-DD', () => {
     expect(() => membershipStatus(membership, plan, 'next tuesday')).toThrow('Invalid date: next tuesday');
+  });
+});
+
+describe('addDays', () => {
+  it('adds days across a month boundary', () => {
+    expect(addDays('2026-10-31', 1)).toBe('2026-11-01');
+  });
+
+  it('adds a full plan length across a year boundary', () => {
+    expect(addDays('2026-12-15', 30)).toBe('2027-01-14');
+  });
+});
+
+describe('currentMembership', () => {
+  const older = { ...membership, id: 'old', startDate: '2026-01-01', endDate: '2026-01-31' };
+  const newer = { ...membership, id: 'new', startDate: '2026-10-01', endDate: '2026-10-31' };
+  const someoneElse = { ...membership, id: 'other', userId: 'u2', startDate: '2026-11-01' };
+
+  it('picks the membership that started most recently', () => {
+    expect(currentMembership([newer, older, someoneElse], 'u1')?.id).toBe('new');
+  });
+
+  it('returns null for a member who has never had a membership', () => {
+    expect(currentMembership([someoneElse], 'u1')).toBeNull();
   });
 });

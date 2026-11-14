@@ -10,5 +10,6 @@ import type { User } from '../domain/auth/User';
  */
 export interface UserRepository {
   findByEmail(email: string): User | undefined;
+  findAll(): User[];
   save(user: User): void;
 }
