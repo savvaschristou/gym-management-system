@@ -17,6 +17,21 @@ function toDayNumber(isoDate: string): number {
   return ms / MS_PER_DAY;
 }
 
+/** Adds whole days to a 'YYYY-MM-DD' date and returns the new date. */
+export function addDays(isoDate: string, days: number): string {
+  return new Date((toDayNumber(isoDate) + days) * MS_PER_DAY).toISOString().slice(0, 10);
+}
+
+/**
+ * A member's current membership: the one that started most recently, or
+ * null if they've never had one. Older memberships are kept as history.
+ */
+export function currentMembership(memberships: Membership[], userId: string): Membership | null {
+  const theirs = memberships.filter((m) => m.userId === userId);
+  if (theirs.length === 0) return null;
+  return theirs.reduce((latest, m) => (m.startDate > latest.startDate ? m : latest));
+}
+
 /**
  * Decides a membership's status on a given day ('YYYY-MM-DD').
  * Frozen and cancelled are choices someone made, so they win over dates.
