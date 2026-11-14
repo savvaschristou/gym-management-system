@@ -10,9 +10,11 @@ import { AuthSession } from './services/auth/AuthSession';
 import { DEMO_ACCOUNTS } from './services/auth/DemoAuthProvider';
 import { LocalAuthProvider } from './services/auth/LocalAuthProvider';
 import { LoginValidator } from './services/auth/LoginValidator';
+import { LiftService } from './services/lifts/LiftService';
 import { Sha256PasswordHasher } from './services/auth/PasswordHasher';
 import { SignUpService } from './services/auth/SignUpService';
 import { StaffService } from './services/staff/StaffService';
+import LiftLog from './ui/LiftLog';
 import MembershipCard from './ui/MembershipCard';
 import ProtectedRoute from './ui/ProtectedRoute';
 import SignUpPage from './ui/SignUpPage';
@@ -29,6 +31,12 @@ const plans = new LocalStorageRepository('gym.membershipPlans');
 const memberships = new LocalStorageRepository('gym.memberships');
 const checkIns = new LocalStorageRepository('gym.checkIns');
 const staffService = new StaffService(users, plans, memberships, checkIns);
+const exercises = new LocalStorageRepository('gym.exercises');
+const liftService = new LiftService(
+  exercises,
+  new LocalStorageRepository('gym.workoutSessions'),
+  new LocalStorageRepository('gym.liftSets')
+);
 
 /** A date as 'YYYY-MM-DD' in the user's own time zone, `daysFromNow` days ahead. */
 function localDate(daysFromNow = 0) {
@@ -66,6 +74,16 @@ if (!memberships.findAll().some((m) => m.userId === 'demo-member')) {
     startDate: localDate(),
     endDate: localDate(30),
   });
+}
+
+// Save a starter list of exercises (the same five as db/schema.sql's original
+// demo data) the first time the app runs.
+if (exercises.findAll().length === 0) {
+  exercises.save({ id: 'back-squat', name: 'Back Squat', muscleGroup: 'Legs' });
+  exercises.save({ id: 'bench-press', name: 'Bench Press', muscleGroup: 'Chest' });
+  exercises.save({ id: 'deadlift', name: 'Deadlift', muscleGroup: 'Back' });
+  exercises.save({ id: 'overhead-press', name: 'Overhead Press', muscleGroup: 'Shoulders' });
+  exercises.save({ id: 'barbell-row', name: 'Barbell Row', muscleGroup: 'Back' });
 }
 
 function Home({ title, user, children }) {
@@ -115,6 +133,7 @@ function App() {
             <ProtectedRoute user={user} role="member">
               <Home title="Member home" user={user}>
                 <MemberMembership user={user} />
+                <LiftLog service={liftService} user={user} />
               </Home>
             </ProtectedRoute>
           }
