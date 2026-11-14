@@ -2,7 +2,7 @@ import { LocalStorageRepository } from '../../data/LocalStorageRepository';
 import type { SessionUser } from '../../domain/auth/User';
 import type { Exercise, LiftSet, WorkoutSession } from '../../domain/types';
 import { fakeStorage } from '../../testUtils';
-import { LiftService } from './LiftService';
+import { LiftService, validateSetInput } from './LiftService';
 
 const ava: SessionUser = { id: 'ava', email: 'ava@example.com', displayName: 'Ava Thompson', role: 'member' };
 const liam: SessionUser = { id: 'liam', email: 'liam@example.com', displayName: 'Liam Carter', role: 'member' };
@@ -88,5 +88,20 @@ describe('LiftService', () => {
     service.logSet(liam, { exerciseId: 'bench', weightLbs: 225, reps: 5 }, MONDAY);
     expect(service.history(liam, 'bench')).toEqual([{ date: '2026-11-09', setNumber: 1, weightLbs: 225, reps: 5 }]);
     expect(service.history(ava, 'deadlift')).toEqual([]);
+  });
+});
+
+describe('validateSetInput', () => {
+  it('accepts the edges of the allowed ranges', () => {
+    expect(validateSetInput({ exerciseId: 'squat', weightLbs: 0, reps: 1 })).toEqual([]);
+    expect(validateSetInput({ exerciseId: 'squat', weightLbs: 2000, reps: 100 })).toEqual([]);
+  });
+
+  it('rejects weight and reps just outside the ranges, reporting both', () => {
+    expect(validateSetInput({ exerciseId: 'squat', weightLbs: 2001, reps: 0 })).toHaveLength(2);
+  });
+
+  it('rejects fractional reps and non-numbers', () => {
+    expect(validateSetInput({ exerciseId: 'squat', weightLbs: NaN, reps: 2.5 })).toHaveLength(2);
   });
 });

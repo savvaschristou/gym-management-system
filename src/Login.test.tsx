@@ -41,4 +41,11 @@ describe('Login', () => {
     expect(signIn).toHaveBeenCalledWith('staff@demo.gym', 'demo123');
     expect(screen.queryByText('Wrong email or password')).toBeNull();
   });
+
+  it('shows a friendly error instead of crashing when sign-in throws', async () => {
+    const { signIn } = setup();
+    signIn.mockRejectedValueOnce(new Error('storage unavailable'));
+    fill('member@demo.gym', 'demo123');
+    expect(await screen.findByText('Something went wrong signing in. Please try again.')).toBeTruthy();
+  });
 });

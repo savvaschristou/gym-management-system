@@ -87,6 +87,13 @@ describe('StaffService', () => {
       expect(checkIns.findAll()).toEqual([]);
     });
 
+    it('turns away a cancelled membership and records nothing', () => {
+      const { service, memberships, checkIns } = setup();
+      memberships.save(membership('ava', '2026-11-30', 'cancelled'));
+      expect(service.checkIn(staff, 'ava', TODAY)).toEqual({ ok: false, reason: 'Membership is cancelled' });
+      expect(checkIns.findAll()).toHaveLength(0);
+    });
+
     it('turns away frozen memberships and members with no membership', () => {
       const { service, memberships } = setup();
       memberships.save(membership('ava', '2026-11-30', 'frozen'));

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, JSX } from 'react';
 import { Link } from 'react-router-dom';
 import type { SignUpService } from '../services/auth/SignUpService';
 
@@ -14,21 +14,25 @@ interface SignUpPageProps {
   signUpService: SignUpService;
 }
 
-export default function SignUpPage({ signUpService }: SignUpPageProps) {
+export default function SignUpPage({ signUpService }: SignUpPageProps): JSX.Element {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<string[]>([]);
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent): Promise<void> {
     e.preventDefault();
-    const result = await signUpService.signUp({ displayName, email, password, confirmPassword });
-    setErrors(result.ok ? [] : result.errors);
+    try {
+      const result = await signUpService.signUp({ displayName, email, password, confirmPassword });
+      setErrors(result.ok ? [] : result.errors);
+    } catch {
+      setErrors(['Something went wrong creating your account. Please try again.']);
+    }
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate>
+    <form onSubmit={(e) => void handleSubmit(e)} noValidate>
       <h1>Create an account</h1>
       <div>
         <label htmlFor="name">Name</label>{' '}

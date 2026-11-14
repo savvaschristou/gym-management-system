@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, JSX } from 'react';
 import type { SessionUser } from '../domain/auth/User';
 import type { LiftService } from '../services/lifts/LiftService';
 
@@ -13,7 +13,7 @@ interface LiftLogProps {
   user: SessionUser;
 }
 
-export default function LiftLog({ service, user }: LiftLogProps) {
+export default function LiftLog({ service, user }: LiftLogProps): JSX.Element {
   const exercises = service.listExercises();
   const [exerciseId, setExerciseId] = useState(exercises[0]?.id ?? '');
   const [weight, setWeight] = useState('');
@@ -24,7 +24,7 @@ export default function LiftLog({ service, user }: LiftLogProps) {
   const exerciseName = exercises.find((e) => e.id === exerciseId)?.name ?? '';
   const history = exerciseId ? service.history(user, exerciseId) : [];
 
-  function handleSubmit(e: FormEvent) {
+  function handleSubmit(e: FormEvent): void {
     e.preventDefault();
     const result = service.logSet(user, { exerciseId, weightLbs: Number(weight), reps: Number(reps) });
     if (!result.ok) {

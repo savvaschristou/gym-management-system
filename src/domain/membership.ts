@@ -1,9 +1,10 @@
 import type { Membership, MembershipPlan } from './types';
+import { isoDay } from './util';
 
 /** What the app shows for a membership. Computed, never stored (ADR-003). */
 export type MembershipStatus = 'active' | 'grace' | 'expired' | 'frozen' | 'cancelled';
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const MS_PER_DAY = 86_400_000; // 24 h x 60 min x 60 s x 1000 ms
 
 /**
  * Turns 'YYYY-MM-DD' into a whole day number so dates compare as days,
@@ -19,7 +20,7 @@ function toDayNumber(isoDate: string): number {
 
 /** Adds whole days to a 'YYYY-MM-DD' date and returns the new date. */
 export function addDays(isoDate: string, days: number): string {
-  return new Date((toDayNumber(isoDate) + days) * MS_PER_DAY).toISOString().slice(0, 10);
+  return isoDay(new Date((toDayNumber(isoDate) + days) * MS_PER_DAY));
 }
 
 /**

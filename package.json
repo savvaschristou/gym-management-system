@@ -24,7 +24,8 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "test:coverage": "react-scripts test --watchAll=false --coverage",
-    "lint": "eslint --max-warnings=0 \"src/**/*.{js,ts,tsx}\""
+    "lint": "eslint --max-warnings=0 \"src/**/*.{js,ts,tsx}\"",
+    "lint:analysis": "eslint --no-eslintrc -c .eslintrc.analysis.json \"src/**/*.{js,ts,tsx}\" \"server/**/*.js\""
   },
   "eslintConfig": {
     "extends": [
@@ -56,5 +57,9 @@
       "!src/data/UserRepository.ts",
       "!src/services/auth/AuthProvider.ts"
     ]
+  },
+  "devDependencies": {
+    "eslint-plugin-security": "^1.7.1",
+    "eslint-plugin-sonarjs": "^0.25.1"
   }
 }

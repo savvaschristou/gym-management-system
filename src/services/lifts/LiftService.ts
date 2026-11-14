@@ -1,5 +1,6 @@
 import type { SessionUser } from '../../domain/auth/User';
 import type { Exercise, LiftSet, WorkoutSession } from '../../domain/types';
+import { isoDay, newId } from '../../domain/util';
 
 /**
  * Lift logging: a member logs sets (exercise, weight, reps) and sees their
@@ -36,8 +37,6 @@ export interface HistoryRow {
 export const MAX_WEIGHT_LBS = 2000;
 export const MAX_REPS = 100;
 
-const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-
 export class LiftService {
   constructor(
     private readonly exercises: Store<Exercise>,
@@ -53,15 +52,8 @@ export class LiftService {
   /** Validates and saves one set, starting today's session if needed. */
   logSet(user: SessionUser, input: SetInput, now = new Date()): LogResult {
     const exercise = this.exercises.findById(input.exerciseId);
-    const errors: string[] = [];
-    if (!exercise) errors.push('Choose an exercise');
-    if (!Number.isFinite(input.weightLbs) || input.weightLbs < 0 || input.weightLbs > MAX_WEIGHT_LBS) {
-      errors.push(`Weight must be between 0 and ${MAX_WEIGHT_LBS} lbs`);
-    }
-    if (!Number.isInteger(input.reps) || input.reps < 1 || input.reps > MAX_REPS) {
-      errors.push(`Reps must be a whole number from 1 to ${MAX_REPS}`);
-    }
-    if (errors.length > 0 || !exercise) return { ok: false, errors };
+    const errors = [...(exercise ? [] : ['Choose an exercise']), ...validateSetInput(input)];
+    if (!exercise || errors.length > 0) return { ok: false, errors };
 
     const session = this.todaysSession(user.id, now);
     const earlier = this.sets.findAll().filter((s) => s.sessionId === session.id && s.exerciseId === exercise.id);
@@ -87,18 +79,35 @@ export class LiftService {
     );
     return this.sets
       .findAll()
-      .filter((s) => s.exerciseId === exerciseId && theirSessions.has(s.sessionId))
-      .map((s) => ({ s, startedAt: theirSessions.get(s.sessionId)!.startedAt }))
+      .flatMap((s) => {
+        // Look the session up once; sets from other members' sessions get no match and drop out.
+        const session = s.exerciseId === exerciseId ? theirSessions.get(s.sessionId) : undefined;
+        return session ? [{ s, startedAt: session.startedAt }] : [];
+      })
       .sort((a, b) => b.startedAt.localeCompare(a.startedAt) || a.s.setNumber - b.s.setNumber)
-      .map(({ s, startedAt }) => ({ date: startedAt.slice(0, 10), setNumber: s.setNumber, weightLbs: s.weightLbs, reps: s.reps }));
+      .map(({ s, startedAt }) => ({ date: isoDay(startedAt), setNumber: s.setNumber, weightLbs: s.weightLbs, reps: s.reps }));
   }
 
   private todaysSession(userId: string, now: Date): WorkoutSession {
-    const today = now.toISOString().slice(0, 10);
-    const existing = this.sessions.findAll().find((s) => s.userId === userId && s.startedAt.slice(0, 10) === today);
+    const today = isoDay(now);
+    const existing = this.sessions.findAll().find((s) => s.userId === userId && isoDay(s.startedAt) === today);
     if (existing) return existing;
     const session: WorkoutSession = { id: newId(), userId, startedAt: now.toISOString() };
     this.sessions.save(session);
     return session;
   }
+}
+
+/** Every problem with the weight and reps; an empty array means they are fine. */
+export function validateSetInput({ weightLbs, reps }: SetInput): string[] {
+  const errors: string[] = [];
+  if (!isWithin(weightLbs, 0, MAX_WEIGHT_LBS)) errors.push(`Weight must be between 0 and ${MAX_WEIGHT_LBS} lbs`);
+  if (!Number.isInteger(reps) || !isWithin(reps, 1, MAX_REPS)) {
+    errors.push(`Reps must be a whole number from 1 to ${MAX_REPS}`);
+  }
+  return errors;
+}
+
+function isWithin(n: number, min: number, max: number): boolean {
+  return Number.isFinite(n) && n >= min && n <= max;
 }
