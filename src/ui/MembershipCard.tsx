@@ -14,7 +14,7 @@ interface MembershipCardProps {
   today: string;
 }
 
-const STATUS_LABEL: Record<MembershipStatus, string> = {
+export const STATUS_LABEL: Record<MembershipStatus, string> = {
   active: 'Active',
   grace: 'Grace period',
   expired: 'Expired',
