@@ -12,6 +12,10 @@ export class LocalStorageUserRepository implements UserRepository {
     return this.all().find((u) => u.email.toLowerCase() === wanted);
   }
 
+  findAll(): User[] {
+    return this.all();
+  }
+
   save(user: User): void {
     const others = this.all().filter((u) => u.id !== user.id);
     others.push(user);
