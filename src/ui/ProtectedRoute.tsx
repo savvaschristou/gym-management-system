@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ROLE_HOME } from '../domain/auth/roleHome';
 import type { Role, SessionUser } from '../domain/auth/User';
@@ -16,7 +16,7 @@ interface ProtectedRouteProps {
   children: ReactNode;
 }
 
-export default function ProtectedRoute({ user, role, children }: ProtectedRouteProps) {
+export default function ProtectedRoute({ user, role, children }: ProtectedRouteProps): JSX.Element {
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== role) return <Navigate to={ROLE_HOME[user.role]} replace />;
   return <>{children}</>;

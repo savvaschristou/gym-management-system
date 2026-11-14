@@ -38,6 +38,8 @@ const liftService = new LiftService(
   new LocalStorageRepository('gym.liftSets')
 );
 
+const DEMO_MEMBERSHIP_DAYS = 30; // matches the Monthly plan below
+
 /** A date as 'YYYY-MM-DD' in the user's own time zone, `daysFromNow` days ahead. */
 function localDate(daysFromNow = 0) {
   const d = new Date();
@@ -72,7 +74,7 @@ if (!memberships.findAll().some((m) => m.userId === 'demo-member')) {
     planId: 'monthly',
     state: 'active',
     startDate: localDate(),
-    endDate: localDate(30),
+    endDate: localDate(DEMO_MEMBERSHIP_DAYS),
   });
 }
 

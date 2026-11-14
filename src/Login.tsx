@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, JSX } from 'react';
 import { DEMO_ACCOUNTS } from './services/auth/DemoAuthProvider';
 import type { AuthSession } from './services/auth/AuthSession';
 import type { LoginValidator } from './services/auth/LoginValidator';
@@ -18,24 +18,28 @@ interface LoginProps {
  *  [D] It depends on the AuthSession and LoginValidator abstractions it is
  *      given, with no localStorage or window.location.
  */
-export default function Login({ session, validator }: LoginProps) {
+export default function Login({ session, validator }: LoginProps): JSX.Element {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<string[]>([]);
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent): Promise<void> {
     e.preventDefault();
     const found = validator.validate({ email, password });
     if (found.length > 0) {
       setErrors(found);
       return;
     }
-    const user = await session.signIn(email, password);
-    setErrors(user ? [] : ['Wrong email or password']);
+    try {
+      const user = await session.signIn(email, password);
+      setErrors(user ? [] : ['Wrong email or password']);
+    } catch {
+      setErrors(['Something went wrong signing in. Please try again.']);
+    }
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate>
+    <form onSubmit={(e) => void handleSubmit(e)} noValidate>
       <h1>Gym Login</h1>
       <div>
         <label htmlFor="email">Email</label>{' '}

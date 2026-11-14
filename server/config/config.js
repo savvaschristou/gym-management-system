@@ -1,3 +1,5 @@
+'use strict';
+
 // Database connection settings, used by both the models and sequelize-cli.
 // SQLite keeps the whole database in one file (server/gym.sqlite), so nobody
 // has to install or run a database server.

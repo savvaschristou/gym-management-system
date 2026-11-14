@@ -21,7 +21,7 @@ export class LocalStorageRepository<T extends { id: string }> {
     const raw = this.store.getItem(this.key);
     if (!raw) return [];
     try {
-      const parsed = JSON.parse(raw);
+      const parsed: unknown = JSON.parse(raw);
       return Array.isArray(parsed) ? (parsed as T[]) : [];
     } catch {
       return [];

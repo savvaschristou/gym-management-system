@@ -1,6 +1,7 @@
 import type { UserRepository } from '../../data/UserRepository';
 import type { SessionUser } from '../../domain/auth/User';
 import type { AuthProvider } from './AuthProvider';
+import { constantTimeEquals } from './PasswordHasher';
 import type { PasswordHasher } from './PasswordHasher';
 
 /** Strategy: checks credentials against users in a repository. */
@@ -16,7 +17,7 @@ export class LocalAuthProvider implements AuthProvider {
     const user = this.users.findByEmail(email.trim().toLowerCase());
     if (!user) return null;
     const hash = await this.hasher.hash(password);
-    if (hash !== user.passwordHash) return null;
+    if (!constantTimeEquals(hash, user.passwordHash)) return null;
     const { passwordHash, ...sessionUser } = user;
     return sessionUser;
   }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import type { JSX } from 'react';
 import type { SessionUser } from '../domain/auth/User';
-import type { StaffService } from '../services/staff/StaffService';
+import type { MemberSummary, StaffService } from '../services/staff/StaffService';
 import { STATUS_LABEL } from './MembershipCard';
 
 /**
@@ -15,7 +16,7 @@ interface StaffToolsProps {
   today: string;
 }
 
-export default function StaffTools({ service, staff, today }: StaffToolsProps) {
+export default function StaffTools({ service, staff, today }: StaffToolsProps): JSX.Element {
   const [query, setQuery] = useState('');
   const [message, setMessage] = useState('');
   const [planChoice, setPlanChoice] = useState<Record<string, string>>({});
@@ -24,16 +25,17 @@ export default function StaffTools({ service, staff, today }: StaffToolsProps) {
   const plans = service.activePlans(staff);
   const results = service.searchMembers(staff, query, today);
 
-  function checkIn(memberId: string, name: string) {
+  function checkIn(memberId: string, name: string): void {
     const result = service.checkIn(staff, memberId, today);
     setMessage(result.ok ? `${name} checked in (${STATUS_LABEL[result.status]})` : `${name} can't check in: ${result.reason}`);
   }
 
-  function assign(memberId: string, name: string) {
+  function assign(memberId: string, name: string): void {
     const planId = planChoice[memberId] ?? plans[0]?.id;
     try {
       const membership = service.assignPlan(staff, memberId, planId, today);
-      setMessage(`${name} is now on the ${plans.find((p) => p.id === planId)?.name} plan until ${membership.endDate}`);
+      const planName = plans.find((p) => p.id === membership.planId)?.name ?? membership.planId;
+      setMessage(`${name} is now on the ${planName} plan until ${membership.endDate}`);
       setVersion((v) => v + 1);
     } catch (e) {
       setMessage((e as Error).message);
@@ -59,11 +61,11 @@ export default function StaffTools({ service, staff, today }: StaffToolsProps) {
             </tr>
           </thead>
           <tbody>
-            {results.map(({ member, plan, membership, status }) => (
+            {results.map(({ member, ...membershipInfo }) => (
               <tr key={member.id}>
                 <td>{member.displayName}</td>
                 <td>{member.email}</td>
-                <td>{status ? `${plan?.name}, ${STATUS_LABEL[status]} (ends ${membership?.endDate})` : 'None'}</td>
+                <td>{describeMembership(membershipInfo)}</td>
                 <td>
                   <button aria-label={`Check in ${member.displayName}`} onClick={() => checkIn(member.id, member.displayName)}>
                     Check in
@@ -90,4 +92,10 @@ export default function StaffTools({ service, staff, today }: StaffToolsProps) {
       )}
     </section>
   );
+}
+
+/** "Monthly, Active (ends 2026-12-01)", or "None" when there is no membership. */
+function describeMembership({ plan, membership, status }: Omit<MemberSummary, 'member'>): string {
+  if (!plan || !membership || !status) return 'None';
+  return `${plan.name}, ${STATUS_LABEL[status]} (ends ${membership.endDate})`;
 }

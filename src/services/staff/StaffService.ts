@@ -3,6 +3,7 @@ import type { SessionUser } from '../../domain/auth/User';
 import { addDays, currentMembership, membershipStatus } from '../../domain/membership';
 import type { MembershipStatus } from '../../domain/membership';
 import type { CheckIn, Membership, MembershipPlan } from '../../domain/types';
+import { newId } from '../../domain/util';
 
 /**
  * The staff tools: find members, let them in (check-in), and give them a plan.
@@ -36,7 +37,12 @@ export interface MemberSummary {
 
 export type CheckInResult = { ok: true; status: MembershipStatus; checkIn: CheckIn } | { ok: false; reason: string };
 
-const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+/** Statuses that keep a member out, and the reason staff see for each. */
+const BLOCKED_REASON = new Map<MembershipStatus, (membership: Membership) => string>([
+  ['frozen', () => 'Membership is frozen'],
+  ['cancelled', () => 'Membership is cancelled'],
+  ['expired', (m) => `Membership expired on ${m.endDate}`],
+]);
 
 export class StaffService {
   constructor(
@@ -73,9 +79,8 @@ export class StaffService {
     const member = this.findMember(memberId);
     const { membership, plan, status } = this.summarize(member, today);
     if (!membership || !plan || !status) return { ok: false, reason: 'No membership on file' };
-    if (status === 'frozen') return { ok: false, reason: 'Membership is frozen' };
-    if (status === 'cancelled') return { ok: false, reason: 'Membership is cancelled' };
-    if (status === 'expired') return { ok: false, reason: `Membership expired on ${membership.endDate}` };
+    const blocked = BLOCKED_REASON.get(status);
+    if (blocked) return { ok: false, reason: blocked(membership) };
 
     const checkIn: CheckIn = { id: newId(), memberId, staffId: actor.id, checkedInAt: now.toISOString() };
     this.checkIns.save(checkIn);
@@ -101,7 +106,7 @@ export class StaffService {
     return membership;
   }
 
-  private findMember(memberId: string) {
+  private findMember(memberId: string): SessionUser {
     const user = this.users.findAll().find((u) => u.id === memberId && u.role === 'member');
     if (!user) throw new Error('No member with that id');
     return user;
@@ -116,6 +121,6 @@ export class StaffService {
   }
 }
 
-function requireStaff(actor: SessionUser) {
+function requireStaff(actor: SessionUser): void {
   if (actor.role !== 'staff') throw new NotAuthorizedError();
 }

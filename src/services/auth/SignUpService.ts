@@ -1,5 +1,6 @@
 import type { UserRepository } from '../../data/UserRepository';
 import type { SessionUser } from '../../domain/auth/User';
+import { newId } from '../../domain/util';
 import type { AuthSession } from './AuthSession';
 import type { PasswordHasher } from './PasswordHasher';
 
@@ -21,11 +22,6 @@ export type SignUpResult =
   | { ok: false; errors: string[] };
 
 export const MIN_PASSWORD_LENGTH = 8;
-
-/** Unique enough for one browser; crypto.randomUUID isn't available in Jest. */
-function newId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
-}
 
 export class SignUpService {
   constructor(

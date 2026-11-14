@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { membershipStatus } from '../domain/membership';
 import type { MembershipStatus } from '../domain/membership';
 import type { Membership, MembershipPlan } from '../domain/types';
@@ -22,7 +23,7 @@ export const STATUS_LABEL: Record<MembershipStatus, string> = {
   cancelled: 'Cancelled',
 };
 
-export default function MembershipCard({ membership, plan, today }: MembershipCardProps) {
+export default function MembershipCard({ membership, plan, today }: MembershipCardProps): JSX.Element {
   if (!membership || !plan) {
     return (
       <section>
